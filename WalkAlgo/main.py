@@ -8,7 +8,7 @@ import numpy as np
 async def main():
 	ui = UI(600, 600)
 	ui.sc.bgcolor("black")
-	robot = Robot(ui, np.array([0, 0]), 50, 75)
+	robot = Robot(ui, np.array([0, 0]), 50, 75, 0)
 
 	while True:
 		ui.t.clear()
