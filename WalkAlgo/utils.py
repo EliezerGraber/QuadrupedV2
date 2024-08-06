@@ -27,11 +27,11 @@ def line_intersection(A, B, P, v):
 		return False
 
 #takes array points and indices of three points
-def find_side_of_triangle(points, tri, direction_v):
+def find_side_of_triangle(points, tri, direction_v, center):
 	sides = combinations(tri, 2)
 	#sides = [(A, B), (B, C), (C, A)]
 	for side in sides:
-		intersection = line_intersection(legs[side[0]], legs[side[1]], center, direction_v)
+		intersection = line_intersection(points[side[0]]["pos"], points[side[1]]["pos"], center, direction_v)
 		if intersection:
 			return side
 	return None
@@ -49,3 +49,11 @@ def is_point_in_triangle(p, q, r, point):
 	o2 = orientation(q, r, point)
 	o3 = orientation(r, p, point)
 	return (o1 == o2 == o3) #or o1 == 0 or o2 == 0 or o3 == 0
+
+def unit_vector(vector):
+    return vector / np.linalg.norm(vector)
+
+def angle_between(v1, v2):
+    v1_u = unit_vector(v1)
+    v2_u = unit_vector(v2)
+    return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
