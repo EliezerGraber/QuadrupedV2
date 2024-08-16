@@ -30,8 +30,9 @@ class Robot():
 						},
 					]
 		self.legs = self.leg_anchors
-		self.free_leg = 0;
+		self.free_leg = 0
 		self.balance_safety = balance_safety
+		self.ready_to_switch = True
 
 	def draw(self):
 		self.balance_check()
@@ -59,23 +60,30 @@ class Robot():
 		elif(len(viable_tris) == 0):
 			return [0, 1, 2, 3]
 		else:
-			print("?")
 			return None
 
 	def find_target_leg(self, direction_v, triangle):
+		print(triangle)
 		side = find_side_of_triangle(self.legs, triangle, direction_v, self.center["pos"])
+		print(side, direction_v, self.legs[side[0]]["pos"] - self.legs[side[1]]["pos"])
 		if np.dot(self.legs[side[0]]["pos"] - self.legs[side[1]]["pos"], direction_v) > 0:
-			return side[1]
+			return side[1], side
 		else:
-			return side[0]
+			return side[0], side
 
 	def move(self, direction):
 		direction_v = np.array([int(direction == "Right") - int(direction == "Left"), int(direction == "Up") - int(direction == "Down")])
 		norm = np.linalg.norm(direction_v)
 		direction_u = direction_v/norm
-		self.ideal_center["pos"] = self.ideal_center["pos"] + direction_v #+=?
-		self.center["pos"] = self.center["pos"] + direction_v #only update real center if moving wont disrupt the active triangle
-		self.move_a_leg(direction_v)
+		
+		if self.ready_to_switch:
+			self.adjusted_direction_v, self.pair = self.leg_switch(direction_v)
+			self.ready_to_switch = False
+		else:
+			self.ready_to_switch = self.leg_move(self.adjusted_direction_v, self.pair)
+
+		self.ideal_center["pos"] = self.ideal_center["pos"] + direction_v/2 #+=?
+		self.center["pos"] = self.center["pos"] + direction_v/2 #only update real center if moving wont disrupt the active triangle
 
 	def are_legs_adjacent(self, l1, l2):
 		return (l1 + l2) %3 == 1 or (l1 + l2) %3 == 2
@@ -83,11 +91,23 @@ class Robot():
 	def get_leg_pairs(self, direction_v):
 		tris = self.balance_check()
 		free_legs = self.find_free_legs(tris)
+		if free_legs == None:
+			free_legs = [farthest_vector(direction_v, [leg["pos"] for leg in self.legs])] #should an approach like this be used all the time?
+			tris = [[self.legs[leg]["pos"] for leg in [0, 1, 2, 3] if leg != free_legs[0]]]
 		leg_pairs = [];
-		for free_leg in free_legs:
-			target_leg = self.find_target_leg(direction_v, (leg for leg in [0, 1, 2, 3] if leg is not free_leg))
-			if self.are_legs_adjacent(free_leg, target_leg):
-				leg_pairs.append({"free": free_leg, "target": target_leg})
+		for i, free_leg in enumerate(free_legs):
+			target_leg, side = self.find_target_leg(direction_v, [leg for leg in [0, 1, 2, 3] if leg != free_leg])
+			print(self.are_legs_adjacent(free_leg, target_leg))
+			x = np.dot(self.legs[target_leg]["pos"] - self.legs[free_leg]["pos"], direction_v)
+			print(x)
+			if 0 < x < 3 or x < -75: #70? 90? issues because center isn't fast enough. if it is sped up uniformly this causes other issues. work on variable speed
+				continue
+			if self.are_legs_adjacent(free_leg, target_leg) and np.dot(direction_v, self.legs[target_leg]["pos"] - self.legs[free_leg]["pos"]) > 0:
+				cores = [leg for leg in [0, 1, 2, 3] if leg != free_leg and leg != target_leg]
+				leg_pairs.append({"free": free_leg, "target": target_leg, "cores": cores, "tri": tris[i]})
+			else:
+				cores = [leg for leg in [0, 1, 2, 3] if leg != free_leg]
+				leg_pairs.append({"free": free_leg, "target": None, "cores": side, "tri": tris[i]})
 		return leg_pairs
 
 	def is_tri_good(self, p1, p2, p3, margin):
@@ -95,24 +115,65 @@ class Robot():
 		side_length_2 = np.linalg.norm(p3 - p2)
 		return (abs(side_length_1 - side_length_2) < margin)
 
-	def move_a_leg(self, direction_v):
-		for leg_pair in self.get_leg_pairs(direction_v):
-			print(leg_pair)
-			stable_side = list((leg for leg in [0, 1, 2, 3] if leg is not leg_pair["target"] and leg is not leg_pair["free"]))
-			if not self.is_tri_good(self.legs[stable_side[0]]["pos"], self.legs[stable_side[1]]["pos"], self.legs[leg_pair["free"]]["pos"], 1) and np.linalg.norm(self.legs[leg_pair["target"]]["pos"] - self.legs[leg_pair["free"]]["pos"]) > 1:
+	def leg_switch(self, direction_v):
+		leg_pairs = self.get_leg_pairs(direction_v)
+		tris = []
+		print(leg_pairs)
+		for pair in leg_pairs:
+			tris.append(pair["tri"])
+		index = closest_to_equilateral(tris)
+		leg_pair = leg_pairs[index]
+		print(leg_pair)
+		#for leg_pair in self.get_leg_pairs(direction_v):
+		if leg_pair["target"] != None:
+			if not self.is_tri_good(self.legs[leg_pair["cores"][0]]["pos"], self.legs[leg_pair["cores"][1]]["pos"], self.legs[leg_pair["free"]]["pos"], 2):# and np.linalg.norm(self.legs[leg_pair["target"]]["pos"] - self.legs[leg_pair["free"]]["pos"]) > 1:
 				leg_direction_u = unit_vector(self.legs[leg_pair["target"]]["pos"] - self.legs[leg_pair["free"]]["pos"])
-				if angle_between(leg_direction_u, direction_v) < math.pi/2:
-					self.legs[leg_pair["free"]]["pos"] += leg_direction_u * 3.5
+				if abs(angle_between(leg_direction_u, direction_v)) < math.pi/2: #this may need to be absolute value of angle
+					adjusted_direction_v = leg_direction_u * 2.4
 				else:
-					self.legs[leg_pair["free"]]["pos"] += direction_v * 3.5
-			#elif np.linalg.norm(self.legs[leg_pair["target"]]["pos"] - self.legs[leg_pair["free"]]["pos"]) > 0 and self.is_tri_good(self.legs[stable_side[0]]["pos"], self.legs[stable_side[1]]["pos"], self.legs[leg_pair["target"]]["pos"], 1):
-			#	self.legs[leg_pair["target"]]["pos"] += unit_vector(direction_v) * 3
+					adjusted_direction_v = unit_vector(direction_v) * 2.4 #speed needs to be a universal variable, but depended on distance (sine)
+				self.free_leg = leg_pair["free"]
+				#break
 			elif np.linalg.norm(self.legs[leg_pair["target"]]["pos"] - self.center["pos"]) < 60:
-				self.legs[leg_pair["target"]]["pos"] += unit_vector(direction_v) * 3.5
+				adjusted_direction_v = unit_vector(direction_v) * 2.4
+				self.free_leg = leg_pair["target"]
 				#allow for double replacement?
+				#break
 			else:
 				print("no leg movement here?")
-			break #temp
+			#break #temp
+		else:
+			adjusted_direction_v = unit_vector(direction_v) * 2.4 #maybe?
+			self.free_leg = leg_pair["free"]
+		
+		return adjusted_direction_v, leg_pair
+
+	def leg_move(self, direction_v, pair):
+		self.legs[self.free_leg]["pos"] += direction_v
+		a = np.linalg.norm(self.legs[self.free_leg]["pos"] - self.legs[pair["cores"][0]]["pos"])
+		b = np.linalg.norm(self.legs[self.free_leg]["pos"] - self.legs[pair["cores"][1]]["pos"])
+		
+		#c = np.linalg.norm(self.legs[pair["free"]]["pos"] - self.legs[pair["target"]]["pos"])
+		#d = 70#np.linalg.norm(self.legs[pair["cores"][0]]["pos"] - self.legs[pair["cores"][1]]["pos"])
+		
+		#v = max_p - self.legs[self.free_leg]["pos"]
+		#if abs(angle_between(v, direction_v)) < math.pi/2:
+		if pair["target"] == None:
+			print(round(a, 2), round(b, 2))
+			if abs(a - b) > 3:
+				return False
+		elif self.free_leg == pair["free"]:
+			print(round(a, 2), round(b, 2), round(np.linalg.norm(self.legs[pair["target"]]["pos"] - self.legs[self.free_leg]["pos"]), 2))
+			if abs(a - b) > 3 and np.linalg.norm(self.legs[pair["target"]]["pos"] - self.legs[self.free_leg]["pos"]) > 3:
+				return False
+		elif self.free_leg == pair["target"]:
+			#print(round(c, 2), round(d, 2))
+			#if abs(c - d) > 3:
+			print("target leg is free")
+			return False
+		#if (abs(a - b) > 5 and self.free_leg == pair["free"]) or (abs(c - d) > 5 and self.free_leg == pair["target"]): #if moving free, if target, its closer core and free, or core to core and free to target
+		#	return False
+		return True
 
 			#need to control real center vs ideal center
 				#both in terms of not going too fast and in terms of not staying perfectly straight in order to balance

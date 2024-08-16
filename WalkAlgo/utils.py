@@ -21,7 +21,7 @@ def line_intersection(A, B, P, v):
 	s = np.cross(AP, AB) / denom
 
 	# Check if the intersection is within the line segment and vector direction
-	if 0 <= t < 1 and s >= 0:
+	if 0 <= t < 1 and s > 0:
 		return True
 	else:
 		return False
@@ -48,12 +48,41 @@ def is_point_in_triangle(p, q, r, point):
 	o1 = orientation(p, q, point)
 	o2 = orientation(q, r, point)
 	o3 = orientation(r, p, point)
-	return (o1 == o2 == o3) #or o1 == 0 or o2 == 0 or o3 == 0
+	return (o1 == o2 == o3) or o1 == 0 or o2 == 0 or o3 == 0
 
 def unit_vector(vector):
     return vector / np.linalg.norm(vector)
 
 def angle_between(v1, v2):
-    v1_u = unit_vector(v1)
-    v2_u = unit_vector(v2)
-    return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
+    #v1_u = unit_vector(v1)
+    #v2_u = unit_vector(v2)
+    #return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
+    angle = np.arctan2(v2[1], v2[0]) - np.arctan2(v1[1], v1[0])
+    if angle > math.pi:
+    	angle -= 2 * math.pi
+    elif angle <= -math.pi:
+    	angle += 2 * math.pi
+    return angle
+
+def triangle_equality(points):
+    a, b, c = points
+    sides = [np.linalg.norm(b - a), np.linalg.norm(c - b), np.linalg.norm(a - c)]
+    std_dev = np.std(sides)
+    return std_dev
+
+def closest_to_equilateral(tris):
+	min_std_dev = float('inf')
+	closest_set = None
+
+	for i, tri in enumerate(tris):
+		std_dev = triangle_equality(tri)
+		if std_dev < min_std_dev:
+			min_std_dev = std_dev
+			closest_set = i
+
+	return closest_set
+
+def farthest_vector(target, vector_list):
+    distances = [np.linalg.norm(target - v) for v in vector_list]
+    closest_index = np.argmax(distances)
+    return closest_index
