@@ -33,6 +33,7 @@ class Robot():
 		self.free_leg = 0
 		self.balance_safety = balance_safety
 		self.ready_to_switch = True
+		self.last_tri_factors = []
 
 	def draw(self):
 		self.balance_check()
@@ -127,24 +128,20 @@ class Robot():
 		index = closest_to_equilateral(self.legs, tris)
 		leg_pair = leg_pairs[index]
 		print(leg_pair)
-		#for leg_pair in self.get_leg_pairs(direction_v):
 		if leg_pair["target"] != None:
 			if not self.is_tri_good(self.legs[leg_pair["cores"][0]]["pos"], self.legs[leg_pair["cores"][1]]["pos"], self.legs[leg_pair["free"]]["pos"], 2):# and np.linalg.norm(self.legs[leg_pair["target"]]["pos"] - self.legs[leg_pair["free"]]["pos"]) > 1:
 				leg_direction_u = unit_vector(self.legs[leg_pair["target"]]["pos"] - self.legs[leg_pair["free"]]["pos"])
 				if abs(angle_between(leg_direction_u, direction_v)) < math.pi/2: #this may need to be absolute value of angle
 					adjusted_direction_v = leg_direction_u * 2.4
 				else:
-					adjusted_direction_v = unit_vector(direction_v) * 2.4 #speed needs to be a universal variable, but depended on distance (sine)
+					adjusted_direction_v = unit_vector(direction_v) * 2.4 #speed needs to be a universal variable, but dependant on distance (sine)
 				self.free_leg = leg_pair["free"]
-				#break
 			elif np.linalg.norm(self.legs[leg_pair["target"]]["pos"] - self.center["pos"]) < 60:
 				adjusted_direction_v = unit_vector(direction_v) * 2.4
 				self.free_leg = leg_pair["target"]
 				#allow for double replacement?
-				#break
 			else:
 				print("no leg movement here?")
-			#break #temp
 		else:
 			adjusted_direction_v = unit_vector(direction_v) * 2.4 #maybe?
 			self.free_leg = leg_pair["free"]
@@ -153,32 +150,52 @@ class Robot():
 
 	def leg_move(self, direction_v, pair):
 		self.legs[self.free_leg]["pos"] += direction_v
-		a = np.linalg.norm(self.legs[self.free_leg]["pos"] - self.legs[pair["cores"][0]]["pos"])
+		tri = [pair["cores"][0], pair["cores"][1], self.free_leg]
+		e = triangle_equality([self.legs[tri[0]]["pos"], self.legs[tri[1]]["pos"], self.legs[tri[2]]["pos"]])
+		print(e)
+		if len(self.last_tri_factors) > 0:
+			derivative = e - self.last_tri_factors[0]
+		else:
+			derivative = -1
+		self.last_tri_factors = [e]
+
+		'''a = np.linalg.norm(self.legs[self.free_leg]["pos"] - self.legs[pair["cores"][0]]["pos"])
 		b = np.linalg.norm(self.legs[self.free_leg]["pos"] - self.legs[pair["cores"][1]]["pos"])
+		c = np.linalg.norm(self.legs[self.free_leg]["pos"] - self.legs[pair["free"]]["pos"])
+
+		if len(self.last_tri_factors) > 0:
+			derivative = a - b - self.last_tri_factors[0]
+			c_derivates = [a - c - self.last_tri_factors[1], c - b - self.last_tri_factors[2]]
+			print(derivative, self.last_tri_factors[0], a-b)
+		else:
+			derivative = -1
+			c_derivates = [-1, -1]
+		self.last_tri_factors = [a - b, a - c, c - b]'''
+
 		
-		#c = np.linalg.norm(self.legs[pair["free"]]["pos"] - self.legs[pair["target"]]["pos"])
-		#d = 70#np.linalg.norm(self.legs[pair["cores"][0]]["pos"] - self.legs[pair["cores"][1]]["pos"])
-		
-		#v = max_p - self.legs[self.free_leg]["pos"]
-		#if abs(angle_between(v, direction_v)) < math.pi/2:
 		if pair["target"] == None:
 			#print(round(a, 2), round(b, 2))
-			if abs(a - b) > 3:
+			#if abs(a - b) > 3: #needs to be minimum, not just 0, in order to deal with non-ideal scenarios
+			if derivative < 0:
 				return False
 		elif self.free_leg == pair["free"]:
 			#print(round(a, 2), round(b, 2), round(np.linalg.norm(self.legs[pair["target"]]["pos"] - self.legs[self.free_leg]["pos"]), 2))
-			if abs(a - b) > 3 and np.linalg.norm(self.legs[pair["target"]]["pos"] - self.legs[self.free_leg]["pos"]) > 3:
+			#if abs(a - b) > 3 and np.linalg.norm(self.legs[pair["target"]]["pos"] - self.legs[self.free_leg]["pos"]) > 3:
+			if derivative < 0 and np.linalg.norm(self.legs[pair["target"]]["pos"] - self.legs[self.free_leg]["pos"]) > 3:
 				return False
 		elif self.free_leg == pair["target"]:
 			#print(round(c, 2), round(d, 2))
 			#if abs(c - d) > 3:
 			#print("target leg is free")
-			c = np.linalg.norm(self.legs[self.free_leg]["pos"] - self.legs[pair["free"]]["pos"])
+			
 			#print(round(a, 2), round(b, 2), round(c, 2))
-			if abs(a - c) > 3 and abs(c - b) > 3:
+			#if abs(a - c) > 3 and abs(c - b) > 3:
+			#if c_derivates[1] < 0 and c_derivates[2] < 0: #does an "and" work here?
+			if derivative < 0:
 				return False
 		#if (abs(a - b) > 5 and self.free_leg == pair["free"]) or (abs(c - d) > 5 and self.free_leg == pair["target"]): #if moving free, if target, its closer core and free, or core to core and free to target
 		#	return False
+		self.last_tri_factors = []
 		return True
 
 			#need to control real center vs ideal center
