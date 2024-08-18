@@ -70,12 +70,12 @@ def triangle_equality(points):
     std_dev = np.std(sides)
     return std_dev
 
-def closest_to_equilateral(tris):
+def closest_to_equilateral(legs, tris):
 	min_std_dev = float('inf')
 	closest_set = None
 
 	for i, tri in enumerate(tris):
-		std_dev = triangle_equality(tri)
+		std_dev = triangle_equality([legs[tri[0]]["pos"], legs[tri[1]]["pos"], legs[tri[2]]["pos"]])
 		if std_dev < min_std_dev:
 			min_std_dev = std_dev
 			closest_set = i
@@ -86,3 +86,9 @@ def farthest_vector(target, vector_list):
     distances = [np.linalg.norm(target - v) for v in vector_list]
     closest_index = np.argmax(distances)
     return closest_index
+
+def centroid(legs, tri): #triangle class?
+	#print(tri)
+	Gx = (legs[tri[0]]["pos"][0] + legs[tri[1]]["pos"][0] + legs[tri[2]]["pos"][0]) / 3
+	Gy = (legs[tri[0]]["pos"][1] + legs[tri[1]]["pos"][1] + legs[tri[2]]["pos"][1]) / 3
+	return np.array([Gx, Gy])
