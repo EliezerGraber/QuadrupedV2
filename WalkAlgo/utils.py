@@ -15,23 +15,23 @@ def line_intersection(A, B, P, v):
 
 	# Check if the lines are parallel (cross is zero)
 	if denom == 0:
-		return False
+		return False, 0
 
 	t = np.cross(AP, v) / denom
 	s = np.cross(AP, AB) / denom
 
 	# Check if the intersection is within the line segment and vector direction
 	if 0 <= t < 1 and s > 0:
-		return True
+		return True, s
 	else:
-		return False
+		return False, s
 
 #takes array points and indices of three points
 def find_side_of_triangle(points, tri, direction_v, center):
 	sides = combinations(tri, 2)
 	#sides = [(A, B), (B, C), (C, A)]
 	for side in sides:
-		intersection = line_intersection(points[side[0]]["pos"], points[side[1]]["pos"], center, direction_v)
+		intersection, s = line_intersection(points[side[0]]["pos"], points[side[1]]["pos"], center, direction_v)
 		if intersection:
 			return side
 	return None
@@ -96,7 +96,7 @@ def centroid(legs, tri): #triangle class?
 def tri_area(points):
 	a, b, c = points
 	AB = b - a
-    AC = c - a
-    cross_product = np.cross(AB, AC)
-    area = 0.5 * np.abs(cross_product)
-    return area
+	AC = c - a
+	cross_product = np.cross(AB, AC)
+	area = 0.5 * np.abs(cross_product)
+	return area

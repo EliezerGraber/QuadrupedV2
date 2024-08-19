@@ -13,6 +13,7 @@ class Robot():
 		self.ui.bind_movement(self.move)
 		self.center = {"pos": center, "color": "gray"}
 		self.ideal_center = {"pos": center, "color": "white"}
+		self.control_center = {"pos": center, "color": "black"}
 		self.leg_dist = leg_dist
 		self.leg_length = leg_length
 		self.leg_anchors = [
@@ -35,6 +36,7 @@ class Robot():
 		self.ready_to_switch = True
 		self.last_tri_factors = []
 		self.last_direction = np.array([0, 0])
+		self.last_target_distance = 70
 
 	def draw(self):
 		self.balance_check()
@@ -42,6 +44,7 @@ class Robot():
 			self.ui.draw_point(leg["pos"], 5, leg["color"])
 		self.ui.draw_point(self.center["pos"], 5, self.center["color"])
 		self.ui.draw_point(self.ideal_center["pos"], 5, self.ideal_center["color"])
+		self.ui.draw_point(self.control_center["pos"], 5, self.control_center["color"])
 
 	def balance_check(self):
 		triangles = combinations([0, 1, 2, 3], 3)
@@ -74,11 +77,16 @@ class Robot():
 
 	def move(self, direction):
 		direction_v = np.array([int(direction == "Right") - int(direction == "Left"), int(direction == "Up") - int(direction == "Down")])
+		odv = direction_v
+		direction_v = direction_v + (self.control_center["pos"] - self.center["pos"]) * 0.01
 		norm = np.linalg.norm(direction_v)
 		direction_u = direction_v/norm
+		print(odv, direction_u)
+		direction_v = direction_u
 		
 		if self.ready_to_switch or abs(angle_between(direction_v, self.last_direction)) > math.pi/32:
 			self.adjusted_direction_v, self.pair = self.leg_switch(direction_v)
+			print("   :::", self.pair)
 			self.ready_to_switch = False
 		else:
 			self.ready_to_switch = self.leg_move(self.adjusted_direction_v, self.pair)
@@ -87,6 +95,7 @@ class Robot():
 		adjustment_v2  = centroid(self.legs, [self.pair["cores"][0], self.pair["cores"][1], self.free_leg]) - self.ideal_center["pos"]
 		self.ideal_center["pos"] = self.ideal_center["pos"] + direction_v * 0.6 + adjustment_v2 * 0.1 #+=?
 		self.center["pos"] = self.center["pos"] + (direction_v * 0.6 + (self.ideal_center["pos"] - self.center["pos"]) * 0.1 + adjustment_v1 * 0.3)
+		self.control_center["pos"] = self.control_center["pos"] + odv * 0.6
 		#self.center["pos"] = self.center["pos"] + direction_v/2 #only update real center if moving wont disrupt the active triangle
 		self.last_direction = direction_v
 
@@ -103,10 +112,13 @@ class Robot():
 		leg_pairs = [];
 		for i, free_leg in enumerate(free_legs):
 			target_leg, side = self.find_target_leg(direction_v, [leg for leg in [0, 1, 2, 3] if leg != free_leg])
-			print(target_leg, side)
+			#print(target_leg, side)
 			x = np.dot(self.legs[target_leg]["pos"] - self.legs[free_leg]["pos"], direction_v)
-			print(target_leg, free_leg, x)
-			if 0 < x < 2 or x < -90: #70? 90? issues because center isn't fast enough. if it is sped up uniformly this causes other issues. work on variable speed
+			cores = [leg for leg in [0, 1, 2, 3] if leg != free_leg and leg != target_leg]
+			a = line_intersection(self.legs[target_leg]["pos"], self.legs[cores[0]]["pos"], self.legs[free_leg]["pos"], direction_v)
+			b = line_intersection(self.legs[target_leg]["pos"], self.legs[cores[1]]["pos"], self.legs[free_leg]["pos"], direction_v)
+			print("  ", target_leg, free_leg, x, a, b)
+			if 0 < x < 2 or x < -1100 or 0 < a[1] < 2 or 0 < b[1] < 2: #70? 90? issues because center isn't fast enough. if it is sped up uniformly this causes other issues. work on variable speed
 				continue
 			if self.are_legs_adjacent(free_leg, target_leg) and np.dot(direction_v, self.legs[target_leg]["pos"] - self.legs[free_leg]["pos"]) > 0:
 				cores = [leg for leg in [0, 1, 2, 3] if leg != free_leg and leg != target_leg]
@@ -118,7 +130,7 @@ class Robot():
 			else:
 				cores = [leg for leg in [0, 1, 2, 3] if leg != free_leg]
 				leg_pairs.append({"free": free_leg, "target": None, "cores": side, "tri": [leg for leg in [0, 1, 2, 3] if leg != free_leg]})
-		print(leg_pairs)
+		#print(leg_pairs)
 		return leg_pairs
 
 	def is_tri_good(self, p1, p2, p3, margin):
@@ -132,6 +144,7 @@ class Robot():
 		leg_pairs = self.get_leg_pairs(direction_v)
 		tris = []
 		if len(leg_pairs) == 0:
+			print("len(leg_pairs) == 0")
 			return direction_v, None
 
 		for pair in leg_pairs:
@@ -147,44 +160,68 @@ class Robot():
 				else:
 					adjusted_direction_v = unit_vector(direction_v) * 2.4 #speed needs to be a universal variable, but dependant on distance (sine)
 				self.free_leg = leg_pair["free"]
-			elif np.linalg.norm(self.legs[leg_pair["target"]]["pos"] - self.center["pos"]) < 60:
+			elif np.linalg.norm(self.legs[leg_pair["target"]]["pos"] - self.center["pos"]) < 70: #60? 80?
 				adjusted_direction_v = unit_vector(direction_v) * 2.4
 				self.free_leg = leg_pair["target"]
 				#allow for double replacement?
 			else:
 				print("no leg movement here?")
+				print(np.linalg.norm(self.legs[leg_pair["target"]]["pos"] - self.center["pos"]))
 				return direction_v, None
 		else:
 			adjusted_direction_v = unit_vector(direction_v) * 2.4 #maybe?
 			self.free_leg = leg_pair["free"]
-		
+
 		return adjusted_direction_v, leg_pair
 
 	def leg_move(self, direction_v, pair):
 		if pair == None:
 			return True
 
-		self.legs[self.free_leg]["pos"] += direction_v
+		
 		tri = [pair["cores"][0], pair["cores"][1], self.free_leg]
+		area = tri_area([self.legs[pair["tri"][0]]["pos"], self.legs[pair["tri"][1]]["pos"], self.legs[pair["tri"][2]]["pos"]]) 
+		#print(area) #ideal is 2500. work on ways to shrink or grow to match
+		self.legs[self.free_leg]["pos"] += direction_v #+ (self.legs[self.free_leg]["pos"] - self.center["pos"]) * 0.1 * (1 - area/2500)
+
 		e = triangle_equality([self.legs[tri[0]]["pos"], self.legs[tri[1]]["pos"], self.legs[tri[2]]["pos"]])
-		print(tri_area([self.legs[tri[0]]["pos"], self.legs[tri[1]]["pos"], self.legs[tri[2]]["pos"]]))
+		
 		#print(e)
 		if len(self.last_tri_factors) > 0:
 			derivative = e - self.last_tri_factors[0]
 		else:
 			derivative = -1
 		self.last_tri_factors = [e]
-		
+		#print(derivative)
+
+		if pair["target"] != None:
+			#print(pair)
+			a = line_intersection(self.legs[pair["target"]]["pos"], self.legs[pair["cores"][0]]["pos"], self.legs[self.free_leg]["pos"], direction_v)
+			b = line_intersection(self.legs[pair["target"]]["pos"], self.legs[pair["cores"][1]]["pos"], self.legs[self.free_leg]["pos"], direction_v)
+			print(a, b)
+
+		#print(derivative, 0 - area/2500 + 1, np.linalg.norm(self.legs[pair["target"]]["pos"] - self.legs[self.free_leg]["pos"]))???????????
 		if pair["target"] == None:
-			if derivative < 0:
+			self.legs[self.free_leg]["pos"] += (self.legs[self.free_leg]["pos"] - self.center["pos"]) * 0.03 * (1 - area/2800)
+			print("adjust:", (self.legs[self.free_leg]["pos"] - self.center["pos"]) * 0.03 * (1 - area/2800))
+			#print(derivative, 0 - area/2800 + 1)
+			if derivative < 0 - area/2800 + 1:
 				return False
 		elif self.free_leg == pair["free"]:
-			if derivative < 0 and np.linalg.norm(self.legs[pair["target"]]["pos"] - self.legs[self.free_leg]["pos"]) > 3:
+			#print(derivative, 0 - area/2500 + 1, self.last_target_distance - np.linalg.norm(self.legs[pair["target"]]["pos"] - self.legs[self.free_leg]["pos"]))
+			self.last_target_distance = np.linalg.norm(self.legs[pair["target"]]["pos"] - self.legs[self.free_leg]["pos"])
+			#if derivative < 0 - area/2800 + 1 and np.linalg.norm(self.legs[pair["target"]]["pos"] - self.legs[self.free_leg]["pos"]) > 3:
+			if derivative < 0 - area/2500 + 1 and a[1] > 3 and b[1] > 3:
+				print("haha", a, b)
 				return False
+			print("here")
 		elif self.free_leg == pair["target"]:
-			if derivative < 0:
+			#print(derivative, 0 - area/2500 + 1, self.last_target_distance - np.linalg.norm(self.legs[pair["target"]]["pos"] - self.legs[self.free_leg]["pos"]))
+			self.last_target_distance = np.linalg.norm(self.legs[pair["target"]]["pos"] - self.legs[self.free_leg]["pos"])
+			if derivative < 0 - area/2800 + 1:
 				return False
 		self.last_tri_factors = []
+		print("      switch", pair)
 		return True
 
 		#leg triangle remains size of previous, when switching direction this can shrink and never grow back
