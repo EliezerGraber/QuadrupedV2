@@ -92,3 +92,11 @@ def centroid(legs, tri): #triangle class?
 	Gx = (legs[tri[0]]["pos"][0] + legs[tri[1]]["pos"][0] + legs[tri[2]]["pos"][0]) / 3
 	Gy = (legs[tri[0]]["pos"][1] + legs[tri[1]]["pos"][1] + legs[tri[2]]["pos"][1]) / 3
 	return np.array([Gx, Gy])
+
+def tri_area(points):
+	a, b, c = points
+	AB = b - a
+    AC = c - a
+    cross_product = np.cross(AB, AC)
+    area = 0.5 * np.abs(cross_product)
+    return area

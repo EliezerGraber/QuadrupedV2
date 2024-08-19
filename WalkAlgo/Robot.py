@@ -140,9 +140,9 @@ class Robot():
 		leg_pair = leg_pairs[index]
 		print(leg_pair)
 		if leg_pair["target"] != None:
-			if not self.is_tri_good(self.legs[leg_pair["cores"][0]]["pos"], self.legs[leg_pair["cores"][1]]["pos"], self.legs[leg_pair["free"]]["pos"], 2):# and np.linalg.norm(self.legs[leg_pair["target"]]["pos"] - self.legs[leg_pair["free"]]["pos"]) > 1:
+			if not self.is_tri_good(self.legs[leg_pair["cores"][0]]["pos"], self.legs[leg_pair["cores"][1]]["pos"], self.legs[leg_pair["free"]]["pos"], 2):
 				leg_direction_u = unit_vector(self.legs[leg_pair["target"]]["pos"] - self.legs[leg_pair["free"]]["pos"])
-				if abs(angle_between(leg_direction_u, direction_v)) < math.pi/2: #this may need to be absolute value of angle
+				if abs(angle_between(leg_direction_u, direction_v)) < math.pi/2:
 					adjusted_direction_v = leg_direction_u * 2.4
 				else:
 					adjusted_direction_v = unit_vector(direction_v) * 2.4 #speed needs to be a universal variable, but dependant on distance (sine)
@@ -167,6 +167,7 @@ class Robot():
 		self.legs[self.free_leg]["pos"] += direction_v
 		tri = [pair["cores"][0], pair["cores"][1], self.free_leg]
 		e = triangle_equality([self.legs[tri[0]]["pos"], self.legs[tri[1]]["pos"], self.legs[tri[2]]["pos"]])
+		print(tri_area([self.legs[tri[0]]["pos"], self.legs[tri[1]]["pos"], self.legs[tri[2]]["pos"]]))
 		#print(e)
 		if len(self.last_tri_factors) > 0:
 			derivative = e - self.last_tri_factors[0]
