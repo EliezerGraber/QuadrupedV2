@@ -9,7 +9,7 @@ BL = [-1, 420, -54, -54]
 
 async def main():
 	ik = IK()
-	print(ik.calc(BR, 0, 150, -50))
+	print(ik.calc(FR, 0, 150, -50))
 
 if __name__ == "__main__":
 	asyncio.run(main())

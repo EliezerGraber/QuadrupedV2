@@ -26,7 +26,8 @@ class IK():
 		r, t = cart2pol(x, y)
 		print(r)
 		if(np.sqrt(x**2 + y**2 + z**2) > self.R1 + self.R2 + self.R3 or math.degrees(t) * leg[0] + leg[1] < 0 or math.degrees(t) * leg[0] + leg[1] > 180):
-			return "Target out of range"
+			return None, None, None
+			#return "Target out of range"
 		t1 = math.degrees(t) * leg[0] + leg[1]
 		temp = np.sqrt(x**2 + y**2) - self.R1
 		r, T = cart2pol(temp, z)
