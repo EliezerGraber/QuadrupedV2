@@ -1,4 +1,6 @@
 from machine import Pin, PWM
+#import time
+import asyncio
 
 class Servo:
     # these defaults work for the standard TowerPro SG90
@@ -7,11 +9,13 @@ class Servo:
     __max_u10_duty = 123- 0  # offset for correction
     min_angle = 0
     max_angle = 180
-    current_angle = 0.001
+    current_angle = -0.001
 
 
-    def __init__(self, pin):
+    def __init__(self, pin, min_u10_duty = 20, max_u10_duty = 123):
         self.__initialise(pin)
+        self.__min_u10_duty = min_u10_duty
+        self.__max_u10_duty = max_u10_duty
 
 
     def update_settings(self, servo_pwm_freq, min_u10_duty, max_u10_duty, min_angle, max_angle, pin):
@@ -23,16 +27,28 @@ class Servo:
         self.__initialise(pin)
 
 
-    def move(self, angle):
+    async def move(self, angle, delta = 0): #time in seconds
         # round to 2 decimal places, so we have a chance of reducing unwanted servo adjustments
         angle = round(angle, 2)
         # do we need to move?
         if angle == self.current_angle:
+            print("redundant")
             return
-        self.current_angle = angle
+        if angle < 0 or angle > 180:
+            print("out of bounds")
+            return
+        
         # calculate the new duty cycle and move the motor
         duty_u10 = self.__angle_to_u10_duty(angle)
-        self.__motor.duty(duty_u10)
+        if delta == 0 or current_angle < 0:
+            self.__motor.duty(duty_u10)
+        else:
+            old_duty_u10 = self.__angle_to_u10_duty(self.current_angle)
+            inc = (duty_u10 - old_duty_u10)/250
+            for x in range(250):
+                self.__motor.duty(int(old_duty_u10 + inc * x))
+                await asyncio.sleep_ms(int(delta*1000/250))
+        self.current_angle = angle
 
     def __angle_to_u10_duty(self, angle):
         return int((angle - self.min_angle) * self.__angle_conversion_factor) + self.__min_u10_duty

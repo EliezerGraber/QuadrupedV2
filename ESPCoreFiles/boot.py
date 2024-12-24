@@ -2,6 +2,7 @@
 #import esp
 #esp.osdebug(None)
 import webrepl
+import RobotController
 webrepl.start()
 
 yourWifiSSID = "TZABAR"
@@ -29,3 +30,4 @@ def showip():
 # you have tested it first with your network.
 #
 connect()
+rc = RobotController.RobotController()

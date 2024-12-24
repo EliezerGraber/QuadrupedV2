@@ -1,39 +1,61 @@
 from Servo import Servo
 from IK import IK
+import asyncio
 
 FR = [1, 60, 54, 54]
-FL = [-1, 240, -54, 54]
-BL = [-1, 420, -54, -54]
-BR = [1, -120, 54, -54]
+FL = [1, -60, -54, 54]
+BL = [1, -120, -54, -54]
+BR = [1, 120, 54, -54]
+
+async def aio_all(seq):
+	for f in asyncio.as_completed(seq):
+		await f
 
 class RobotController():
 	def __init__(self):
-		ik = IK()
+		self.ik = IK()
 
-		fr1 = Servo(18, 20, 123)
-		fr2 = Servo(19, 26, 127)
-		fr3 = Servo(21, 26, 127)
+		self.fr1 = Servo(18, 20, 123)
+		self.fr2 = Servo(19, 26, 127)
+		self.fr3 = Servo(21, 26, 127)
 
-		fl1 = Servo(25, 23, 123)
-		fl2 = Servo(33, 23, 123)
-		fl3 = Servo(32, 20, 123)
+		self.fl1 = Servo(25, 23, 123)
+		self.fl2 = Servo(33, 23, 123)
+		self.fl3 = Servo(32, 20, 123)
 
-		bl1 = Servo(13, 21, 132)
-		bl2 = Servo(27, 26, 126)
-		bl3 = Servo(26, 26, 123)
+		self.bl1 = Servo(13, 21, 132)
+		self.bl2 = Servo(27, 26, 126)
+		self.bl3 = Servo(26, 25, 123)
 
-		br1 = Servo(4, 20, 123)
-		br2 = Servo(16, 25, 123)
-		br3 = Servo(27, 26, 131)
+		self.br1 = Servo(4, 20, 123)
+		self.br2 = Servo(16, 25, 123)
+		self.br3 = Servo(17, 26, 131)
 
-		legs = [[FR, [fr1, fr2, fr3]],
-				[FL, [fl1, fl2, fl3]],
-				[BL, [bl1, bl2, bl3]],
-				[BR, [br1, br2, br3]]]
+		self.legs = [[FR, [self.fr1, self.fr2, self.fr3]],
+				[FL, [self.fl1, self.fl2, self.fl3]],
+				[BL, [self.bl1, self.bl2, self.bl3]],
+				[BR, [self.br1, self.br2, self.br3]]] #pointer or copy?
 
-	def move_leg(self, leg, x, y, z):
-		t1, t2, t3 = ik(legs[leg][0], x, y, z)
+	async def cue_move_leg_tasks(self, leg, x, y, z, delta = 0):
+		t1, t2, t3 = self.ik.calc(self.legs[leg][0], x, y, z)
 		if t1 is not None:
-		legs[leg][1][0].move(t1)
-		legs[leg][1][1].move(t2)
-		legs[leg][1][3].move(t3)
+			tasks = [0, 0, 0]
+			tasks[0] = asyncio.create_task(self.legs[leg][1][0].move(t1, delta))
+			tasks[1] = asyncio.create_task(self.legs[leg][1][1].move(t2, delta))
+			tasks[2] = asyncio.create_task(self.legs[leg][1][2].move(t3, delta))
+			return tasks
+		return None
+
+	async def move_leg(self, leg, x, y, z, delta = 0):
+		tasks = self.cue_move_leg_tasks(self, leg, x, y, z, delta)
+		for task in tasks:
+			await task
+
+	def stand(self):
+		tasks = self.cue_move_leg_tasks(0, 80, 180, -50)
+		tasks.append(self.cue_move_leg_tasks(1, 80, -180, -50))
+		tasks.append(self.cue_move_leg_tasks(2, -80, -180, -50))
+		tasks.append(self.cue_move_leg_tasks(3, -80, 180, -50))
+		for task in tasks:
+			await task
+			
