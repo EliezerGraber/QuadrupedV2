@@ -3,12 +3,12 @@ from UI import UI
 from Robot import Robot
 import asyncio
 import keyboard
-import numpy as np
+from utils import *
 
 async def main():
-	ui = UI(800, 800)
+	ui = UI(1000, 1000)
 	ui.sc.bgcolor("black")
-	robot = Robot(np.array([0, 0]), 50) #np.array([0, 0]), 50, 75, 0 #196?
+	robot = Robot(vector2(0, 0), 196) #np.array([0, 0]), 50, 75, 0 #196?
 	ui.bind_movement(robot.move)
 
 	while True:

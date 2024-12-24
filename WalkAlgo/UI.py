@@ -18,17 +18,17 @@ class UI():
 		self.t.penup()
 
 	def draw_point(self, p, r, color):
-		self.t.goto(p[0], p[1])
+		self.t.goto(p.x, p.y)
 		self.t.dot(2*r, color)
 
 	def draw_triangle(self, p0, p1, p2, color):
-		self.t.goto(p0[0], p0[1])
+		self.t.goto(p0.x, p0.y)
 		self.t.pendown()
 		self.t.begin_fill()
 		self.t.color(color)
-		self.t.goto(p1[0], p1[1])
-		self.t.goto(p2[0], p2[1])
-		self.t.goto(p0[0], p0[1])
+		self.t.goto(p1.x, p1.y)
+		self.t.goto(p2.x, p2.y)
+		self.t.goto(p0.x, p0.y)
 		self.t.end_fill()
 		self.t.penup()
 
