@@ -40,7 +40,7 @@ class Servo:
         
         # calculate the new duty cycle and move the motor
         duty_u10 = self.__angle_to_u10_duty(angle)
-        if delta == 0 or current_angle < 0:
+        if delta == 0 or self.current_angle < 0:
             self.__motor.duty(duty_u10)
         else:
             old_duty_u10 = self.__angle_to_u10_duty(self.current_angle)

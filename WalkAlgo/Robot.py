@@ -1,5 +1,4 @@
 import math
-from UI import UI
 from itertools import combinations, permutations
 import numpy as np
 import functools
@@ -8,14 +7,11 @@ import time
 
 class Robot():
 
-	def __init__(self, ui, center, leg_dist, leg_length, balance_safety):
-		self.ui = ui
-		self.ui.bind_movement(self.move)
+	def __init__(self, center, leg_dist):
 		self.center = {"pos": center, "color": "gray"}
 		self.ideal_center = {"pos": center, "color": "white"}
 		self.control_center = {"pos": center, "color": "black"}
 		self.leg_dist = leg_dist
-		self.leg_length = leg_length
 		self.leg_anchors = [
 						{
 							"pos": center + np.array([leg_dist/math.sqrt(2), -leg_dist/math.sqrt(2)]), "color": "yellow"
@@ -32,26 +28,20 @@ class Robot():
 					]
 		self.legs = self.leg_anchors
 		self.free_leg = 0
-		self.balance_safety = balance_safety
 		self.ready_to_switch = True
 		self.last_tri_factors = []
 		self.last_direction = np.array([0, 0])
-		self.last_target_distance = 70
+		self.last_target_distance = 70 #was 70
 
-	def draw(self):
-		self.balance_check()
-		for leg in self.legs:
-			self.ui.draw_point(leg["pos"], 5, leg["color"])
-		self.ui.draw_point(self.center["pos"], 5, self.center["color"])
-		self.ui.draw_point(self.ideal_center["pos"], 5, self.ideal_center["color"])
-		self.ui.draw_point(self.control_center["pos"], 5, self.control_center["color"])
+	def update(self):
+		tris = self.balance_check()
+		return self.legs, self.center, self.ideal_center, self.control_center, tris
 
 	def balance_check(self):
 		triangles = combinations([0, 1, 2, 3], 3)
 		viable_tris = []
 		for triangle in triangles:
 			if is_point_in_triangle(self.legs[triangle[0]]["pos"], self.legs[triangle[1]]["pos"], self.legs[triangle[2]]["pos"], self.center["pos"]):
-				self.ui.draw_triangle(self.legs[triangle[0]]["pos"], self.legs[triangle[1]]["pos"], self.legs[triangle[2]]["pos"], self.legs[triangle[2]]["color"])
 				viable_tris.append(triangle)
 		return viable_tris
 

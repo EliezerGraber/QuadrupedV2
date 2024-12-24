@@ -47,15 +47,23 @@ class RobotController():
 		return None
 
 	async def move_leg(self, leg, x, y, z, delta = 0):
-		tasks = self.cue_move_leg_tasks(self, leg, x, y, z, delta)
+		tasks = await self.cue_move_leg_tasks(self, leg, x, y, z, delta)
 		for task in tasks:
 			await task
 
-	def stand(self):
-		tasks = self.cue_move_leg_tasks(0, 80, 180, -50)
-		tasks.append(self.cue_move_leg_tasks(1, 80, -180, -50))
-		tasks.append(self.cue_move_leg_tasks(2, -80, -180, -50))
-		tasks.append(self.cue_move_leg_tasks(3, -80, 180, -50))
+	async def stand(self):
+		tasks = await self.cue_move_leg_tasks(0, 80, 180, -60, 1)
+		tasks.append(await self.cue_move_leg_tasks(1, -80, 180, -60, 1))
+		tasks.append(await self.cue_move_leg_tasks(2, -80, -180, -60, 1))
+		tasks.append(await self.cue_move_leg_tasks(3, 80, -180, -60, 1))
+		for task in tasks:
+			await task
+
+	async def reset(self):
+		tasks = await self.cue_move_leg_tasks(0, 80, 180, -25)
+		tasks.append(await self.cue_move_leg_tasks(1, -80, 180, -25))
+		tasks.append(await self.cue_move_leg_tasks(2, -80, -180, -25))
+		tasks.append(await self.cue_move_leg_tasks(3, 80, -180, -25))
 		for task in tasks:
 			await task
 			
