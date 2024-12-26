@@ -44,26 +44,21 @@ class RobotController():
 	async def move_seg(self, x, y):
 		self.robot.move(x, y)
 		free = self.robot.free_leg
-		print("br", self.robot.get_legs()[0].x, self.robot.get_legs()[0].y) #br
-		print("fr", self.robot.get_legs()[1].x, self.robot.get_legs()[1].y) #fr
-		print("bl", self.robot.get_legs()[2].x, self.robot.get_legs()[2].y) #bl
-		print("fl", self.robot.get_legs()[3].x, self.robot.get_legs()[3].y) #fl
-		print(free)
 
 		tasks = [
-			self.cue_move_leg_tasks(0, self.robot.get_legs()[1].x, self.robot.get_legs()[1].y, -35 if free == 1 else -60),
-			self.cue_move_leg_tasks(1, self.robot.get_legs()[3].x, self.robot.get_legs()[3].y, -35 if free == 3 else -60),
-			self.cue_move_leg_tasks(2, self.robot.get_legs()[2].x, self.robot.get_legs()[2].y, -35 if free == 2 else -60),
-			self.cue_move_leg_tasks(3, self.robot.get_legs()[0].x, self.robot.get_legs()[0].y, -35 if free == 0 else -60)
+			self.cue_move_leg_tasks(0, self.robot.get_legs()[1].x, self.robot.get_legs()[1].y, -30 if free == 1 else -60),
+			self.cue_move_leg_tasks(1, self.robot.get_legs()[3].x, self.robot.get_legs()[3].y, -30 if free == 3 else -60),
+			self.cue_move_leg_tasks(2, self.robot.get_legs()[2].x, self.robot.get_legs()[2].y, -30 if free == 2 else -60),
+			self.cue_move_leg_tasks(3, self.robot.get_legs()[0].x, self.robot.get_legs()[0].y, -30 if free == 0 else -60)
 		]
 		for task in tasks:
 			await task
-		await asyncio.sleep_ms(10)
+		await asyncio.sleep_ms(1)
 
 
 	async def move_forward(self, x):
 		for i in range(x):
-			print(i + 1, "/", x)
+			#print(i + 1, "/", x)
 			await self.move_seg(0, 1)
 			#self.robot.move(0, 1)
 			#free = self.robot.free_leg
@@ -79,9 +74,11 @@ class RobotController():
 			#for task in tasks:
 			#	await task
 			#await asyncio.sleep_ms(10)
+			if i%50 == 0:
+				print(i, "/", x)
 
 	async def cue_move_leg_tasks(self, leg, x, y, z, delta = 0):
-		print(leg)
+		#print(leg)
 		t1, t2, t3 = self.ik.calc(self.legs[leg][0], x, y, z)
 		if t1 is not None:
 			tasks = [0, 0, 0]

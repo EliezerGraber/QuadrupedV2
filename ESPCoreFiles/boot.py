@@ -2,6 +2,7 @@
 #import esp
 #esp.osdebug(None)
 import webrepl
+import asyncio
 import RobotController
 webrepl.start()
 

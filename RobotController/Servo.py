@@ -33,15 +33,15 @@ class Servo:
         angle = round(angle, 2)
         # do we need to move?
         if angle == self.current_angle:
-            print("redundant")
+            #print("redundant")
             return
 
         if angle < 0:
-            print("out of bounds: 0")
+            #print("oos: 0")
             angle = 0
 
         if angle > 180:
-            print("out of bounds: 180")
+            #print("oob: 180")
             angle = 180
         
         # calculate the new duty cycle and move the motor

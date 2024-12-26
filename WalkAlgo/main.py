@@ -26,10 +26,10 @@ async def main():
 		#print(robot.get_legs()[1].x, robot.get_legs()[1].y) #fr
 		#print(robot.get_legs()[2].x, robot.get_legs()[2].y) #bl
 		#print(robot.get_legs()[3].x, robot.get_legs()[3].y) #fl
-		print("br", robot.get_legs()[0].x, robot.get_legs()[0].y) #br
-		print("fr", robot.get_legs()[1].x, robot.get_legs()[1].y) #fr
-		print("bl", robot.get_legs()[2].x, robot.get_legs()[2].y) #bl
-		print("fl", robot.get_legs()[3].x, robot.get_legs()[3].y) #fl
+		#print("br", robot.get_legs()[0].x, robot.get_legs()[0].y) #br
+		#print("fr", robot.get_legs()[1].x, robot.get_legs()[1].y) #fr
+		#print("bl", robot.get_legs()[2].x, robot.get_legs()[2].y) #bl
+		#print("fl", robot.get_legs()[3].x, robot.get_legs()[3].y) #fl
 		if keyboard.is_pressed("Esc"):
 			break
 

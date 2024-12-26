@@ -68,9 +68,9 @@ class Robot():
 		else:
 			return side[0], side
 
-	def move(self, x, y):#direction):
-		#direction_v = vector2(int(direction == "Right") - int(direction == "Left"), int(direction == "Up") - int(direction == "Down"))
-		direction_v = vector2(x, y)
+	def move(self, direction):#x, y):#
+		direction_v = vector2(int(direction == "Right") - int(direction == "Left"), int(direction == "Up") - int(direction == "Down"))
+		#direction_v = vector2(x, y)
 		direction_v = direction_v.add(self.control_center["pos"].sub(self.center["pos"]).mult(0.0025))
 		direction_u = unit_vector(direction_v)
 		#print(direction_v, direction_u)
@@ -192,7 +192,9 @@ class Robot():
 			a = line_intersection(self.legs[pair["target"]]["pos"], self.legs[pair["cores"][0]]["pos"], self.legs[self.free_leg]["pos"], direction_v)
 			b = line_intersection(self.legs[pair["target"]]["pos"], self.legs[pair["cores"][1]]["pos"], self.legs[self.free_leg]["pos"], direction_v)
 			#print("!!!!!!!!!!!!!!!!")
-			#print(a, b)
+			print(a, b, self.free_leg, pair["free"])
+			if a[1] < 15 or b[1] < 15:
+				return True
 
 		#print(derivative, 0 - area/2500 + 1, np.linalg.norm(self.legs[pair["target"]]["pos"] - self.legs[self.free_leg]["pos"]))???????????
 		if pair["target"] == None:
@@ -205,7 +207,8 @@ class Robot():
 			#print(derivative, 0 - area/2500 + 1, self.last_target_distance - np.linalg.norm(self.legs[pair["target"]]["pos"] - self.legs[self.free_leg]["pos"]))
 			self.last_target_distance = self.legs[pair["target"]]["pos"].sub(self.legs[self.free_leg]["pos"]).magnitude()
 			#if derivative < 0 - area/ideal_area + 1 and np.linalg.norm(self.legs[pair["target"]]["pos"] - self.legs[self.free_leg]["pos"]) > 3:
-			if derivative < 0 - area/ideal_area + 1 and a[1] > 3 and b[1] > 3:
+			#print(derivative, area, a, b)
+			if derivative < 0 - area/ideal_area + 1 and a[1] > 15 and b[1] > 15:
 				#print("haha", a, b)
 				return False
 			#print("here")
@@ -215,7 +218,7 @@ class Robot():
 			if derivative < 0 - area/ideal_area + 1:
 				return False
 		self.last_tri_factors = []
-		print("switch", pair)
+		#print("switch", pair)
 		return True
 
 		#leg triangle remains size of previous, when switching direction this can shrink and never grow back
