@@ -1,5 +1,4 @@
 import math
-from itertools import combinations, permutations
 
 def line_intersection(A, B, P, v):
 	AB = B.sub(A)
@@ -156,3 +155,20 @@ def argmax(data):
 			max_index = i
 			max_value = value
 	return max_index
+
+def combinations(pool, r):
+    n = len(pool)
+    if r > n:
+        return  # No combinations if r > n
+    indices = list(range(r))
+    result = [tuple(pool[i] for i in indices)]
+    while True:
+        for i in reversed(range(r)):
+            if indices[i] != i + n - r:
+               break
+        else:
+           return result
+        indices[i] += 1
+        for j in range(i + 1, r):
+            indices[j] = indices[j - 1] + 1
+        result.append(tuple(pool[i] for i in indices))

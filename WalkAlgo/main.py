@@ -8,7 +8,7 @@ from utils import *
 async def main():
 	ui = UI(1000, 1000)
 	ui.sc.bgcolor("black")
-	robot = Robot(vector2(0, 0), 196) #np.array([0, 0]), 50, 75, 0 #196?
+	robot = Robot(vector2(0, 0), 170) #np.array([0, 0]), 50, 75, 0 #196?
 	ui.bind_movement(robot.move)
 
 	while True:
@@ -22,6 +22,14 @@ async def main():
 		ui.draw_point(ideal_center["pos"], 5, ideal_center["color"])
 		ui.draw_point(control_center["pos"], 5, control_center["color"])
 		ui.update()
+		#print(robot.get_legs()[0].x, robot.get_legs()[0].y) #br
+		#print(robot.get_legs()[1].x, robot.get_legs()[1].y) #fr
+		#print(robot.get_legs()[2].x, robot.get_legs()[2].y) #bl
+		#print(robot.get_legs()[3].x, robot.get_legs()[3].y) #fl
+		print("br", robot.get_legs()[0].x, robot.get_legs()[0].y) #br
+		print("fr", robot.get_legs()[1].x, robot.get_legs()[1].y) #fr
+		print("bl", robot.get_legs()[2].x, robot.get_legs()[2].y) #bl
+		print("fl", robot.get_legs()[3].x, robot.get_legs()[3].y) #fl
 		if keyboard.is_pressed("Esc"):
 			break
 

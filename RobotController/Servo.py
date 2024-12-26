@@ -13,9 +13,10 @@ class Servo:
 
 
     def __init__(self, pin, min_u10_duty = 20, max_u10_duty = 123):
-        self.__initialise(pin)
         self.__min_u10_duty = min_u10_duty
         self.__max_u10_duty = max_u10_duty
+        self.__initialise(pin)
+        print(self.__min_u10_duty, self.__max_u10_duty)
 
 
     def update_settings(self, servo_pwm_freq, min_u10_duty, max_u10_duty, min_angle, max_angle, pin):
@@ -34,9 +35,14 @@ class Servo:
         if angle == self.current_angle:
             print("redundant")
             return
-        if angle < 0 or angle > 180:
-            print("out of bounds")
-            return
+
+        if angle < 0:
+            print("out of bounds: 0")
+            angle = 0
+
+        if angle > 180:
+            print("out of bounds: 180")
+            angle = 180
         
         # calculate the new duty cycle and move the motor
         duty_u10 = self.__angle_to_u10_duty(angle)
@@ -57,5 +63,6 @@ class Servo:
     def __initialise(self, pin):
         self.current_angle = -0.001
         self.__angle_conversion_factor = (self.__max_u10_duty - self.__min_u10_duty) / (self.max_angle - self.min_angle)
+        print(self.__angle_conversion_factor)
         self.__motor = PWM(Pin(pin))
         self.__motor.freq(self.__servo_pwm_freq)
